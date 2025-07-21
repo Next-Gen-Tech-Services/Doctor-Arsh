@@ -15,10 +15,10 @@ const userSchema = mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    subject: {
+    clinicName: {
       type: String,
       trim: true,
-    },
+    }
     /*
     name: {
       type: String,

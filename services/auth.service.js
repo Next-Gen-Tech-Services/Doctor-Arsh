@@ -12,10 +12,10 @@ const { sendMail } = require("../utils/helpers/email.util");
 class AuthService {
   async registerService(req, res) {
     try {
-      const { name, mobileNumber, email, subject } = req.body;
+      const { name, mobileNumber, email, subject, clinicName } = req.body;
 
       // Reject completely empty requests
-      if (!name && !mobileNumber && !email && !subject) {
+      if (!name && !mobileNumber && !email && !subject && !clinicName) {
         log.error("Error from [User SERVICE]: Empty request body");
         return res.status(400).json({
           message: "At least one field is required",
@@ -25,7 +25,7 @@ class AuthService {
         });
       }
 
-      // If email is provided, check if it already exists
+      // Check if email already exists
       if (email) {
         const existingUser = await userDao.getUserByEmail(email);
         if (existingUser.data) {
@@ -38,8 +38,8 @@ class AuthService {
         }
       }
 
-      // Build data object with only defined values
-      const userData = removeNullUndefined({ name, mobileNumber, email, subject });
+      // Build data object
+      const userData = removeNullUndefined({ name, mobileNumber, email, subject, clinicName });
       const userInfo = await userDao.createUser(userData);
 
       if (!userInfo.data) {
@@ -61,7 +61,7 @@ class AuthService {
             name: userInfo.data.name,
             email: userInfo.data.email,
             mobileNumber: userInfo.data.mobileNumber,
-            subject: userInfo.data.subject,
+            clinicName: userInfo.data.clinicName,
           },
         },
       });
