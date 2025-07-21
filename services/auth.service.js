@@ -12,90 +12,70 @@ const { sendMail } = require("../utils/helpers/email.util");
 class AuthService {
   async registerService(req, res) {
     try {
-      const { email, password, type } = req.body;
-      if (!email && !password && !type) {
-        log.error("Error from [User SERVICE]: Invalid Request");
+      const { name, mobileNumber, email, subject } = req.body;
+
+      // Reject completely empty requests
+      if (!name && !mobileNumber && !email && !subject) {
+        log.error("Error from [User SERVICE]: Empty request body");
         return res.status(400).json({
-          message: "Invalid Request",
+          message: "At least one field is required",
           status: "failed",
           data: null,
-          code: 201,
+          code: 400,
         });
       }
-      if (type == "direct") {
-        if (!validateEmail(email)) {
-          log.error("Error from [User SERVICE]: Invalid Email Address");
-          return res.status(400).json({
-            message: "Invalid Email Address",
-            status: "failed",
-            data: null,
-            code: 201,
-          });
-        }
-        const userExist = await userDao.getUserByEmail(email);
-        if (userExist.data == null) {
-          const data = {
-            email,
-            password: await hashItem(password),
-            via: type,
-            emailToken: await randomString(24),
-          };
-          const dataToUpdate = removeNullUndefined(data);
-          const userInfo = await userDao.createUser(dataToUpdate);
 
-          if (userInfo.data !== null) {
-            const token = createToken(userInfo.data.userId);
-            sendMail({
-              email: email,
-              subject: "Activate your account",
-              template: "activationMail.ejs",
-              data: { activationLink: data.emailToken, email },
-            });
-            return res.status(200).json({
-              status: "success",
-              code: 200,
-              message: "Please check your email to activate your account",
-              data: {
-                user: {
-                  userId: userInfo.data.userId,
-                  email: userInfo.data.email,
-                  isVerified: userInfo.data.isVerified,
-                  isProfile: userInfo.data.isProfile,
-                },
-                token,
-              },
-            });
-          } else {
-            return res.status(201).json({
-              status: "fail",
-              code: 201,
-              message: "Something went wrong",
-              data: null,
-            });
-          }
-        } else {
-          return res.status(201).json({
-            status: "alreadyExists",
-            code: 201,
+      // If email is provided, check if it already exists
+      if (email) {
+        const existingUser = await userDao.getUserByEmail(email);
+        if (existingUser.data) {
+          return res.status(409).json({
             message: "Email already exists",
+            status: "alreadyExists",
             data: null,
+            code: 409,
           });
         }
-      } else {
-        return res.status(201).json({
+      }
+
+      // Build data object with only defined values
+      const userData = removeNullUndefined({ name, mobileNumber, email, subject });
+      const userInfo = await userDao.createUser(userData);
+
+      if (!userInfo.data) {
+        return res.status(500).json({
+          message: "User creation failed",
           status: "fail",
-          code: 201,
-          message: "Invalid request",
           data: null,
+          code: 500,
         });
       }
 
-      // }
+      return res.status(200).json({
+        message: "User registered successfully",
+        status: "success",
+        code: 200,
+        data: {
+          user: {
+            userId: userInfo.data.userId,
+            name: userInfo.data.name,
+            email: userInfo.data.email,
+            mobileNumber: userInfo.data.mobileNumber,
+            subject: userInfo.data.subject,
+          },
+        },
+      });
     } catch (error) {
-      log.error("Error from [Auth SERVICE]:", error);
-      throw error;
+      log.error("Error from [User SERVICE]:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        status: "error",
+        data: null,
+        code: 500,
+      });
     }
   }
+
 
   async loginService(req, res) {
     try {
@@ -323,8 +303,8 @@ class AuthService {
 
   async resetPasswordService(req, res) {
     try {
-      const { token,password } = req.body;
-      if (!token&& !password) {
+      const { token, password } = req.body;
+      if (!token && !password) {
         log.error("Error from [User SERVICE]: Invalid Request");
         return res.status(400).json({
           message: "Invalid Request",
@@ -333,14 +313,14 @@ class AuthService {
           code: 201,
         });
       }
-     
+
       const user = await userDao.getUserByResetToken(token);
       if (user.data != null) {
         if (user.data.via === "direct") {
           const data = {
             email: user.data.email,
             password,
-            resetToken:null,
+            resetToken: null,
           };
           const userInfo = await userDao.updateUser(data);
           return res.status(200).json({

@@ -6,6 +6,24 @@ const userSchema = mongoose.Schema(
       type: String,
       trim: true,
     },
+    mobileNumber: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    subject: {
+      type: String,
+      trim: true,
+    },
+    /*
+    name: {
+      type: String,
+      trim: true,
+    },
     userId: {
       type: String,
       trim: true,
@@ -46,6 +64,7 @@ const userSchema = mongoose.Schema(
       type: String,
       required:false,
     },
+    */
   },
   { timestamps: true }
 );
