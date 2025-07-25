@@ -5,7 +5,7 @@ const cookieSession = require("cookie-session");
 const log = require("./configs/logger.config");
 const { PORT, SOCKET_PORT } = require("./configs/server.config");
 
-const { AuthRouter} = require("./routes/index");
+const { ClincAuthRouter, DoctorAuthRouter, LabAuthRouter } = require("./routes/index");
 
 const app = express();
 app.use(cors());
@@ -39,7 +39,10 @@ app.use((req, res, next) => {
   next(); // Proceed to the next middleware or route handler
 });
 
-app.use("/api/auth", AuthRouter);
+app.use("/api/auth/clinic", ClincAuthRouter);
+app.use("/api/auth/doctor", DoctorAuthRouter)
+app.use("/api/auth/lab", LabAuthRouter);
+
 
 
 

@@ -1,10 +1,10 @@
 const router = require("express").Router();
-const authController = require("../controllers/auth.controller");
+const clinicController = require("../controllers/clinic.auth.controller");
 
 
 router.post("/register", async (req, res) => {
   try {
-    const result = await authController.register(req, res);
+    const result = await clinicController.register(req, res);
     return result;
   } catch (error) {
     log.error("Internal Server Error: ", error);

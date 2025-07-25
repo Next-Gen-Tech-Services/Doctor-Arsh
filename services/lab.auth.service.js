@@ -1,4 +1,4 @@
-const userDao = require("../daos/user.dao");
+const labDao = require("../daos/lab.dao");
 const { compareItems, hashItem } = require("../utils/helpers/bcrypt.util");
 const log = require("../configs/logger.config");
 const { createToken } = require("../utils/helpers/tokenHelper.util");
@@ -9,14 +9,13 @@ const {
 } = require("../utils/helpers/common.util");
 const { sendMail } = require("../utils/helpers/email.util");
 
-class AuthService {
+class LabService {
   async registerService(req, res) {
     try {
-      const { name, mobileNumber, email, subject, clinicName } = req.body;
+      const { firstName, lastName, mobileNumber, email, labName } = req.body;
 
-      // Reject completely empty requests
-      if (!name && !mobileNumber && !email && !subject && !clinicName) {
-        log.error("Error from [User SERVICE]: Empty request body");
+      if (!firstName && !lastName && !mobileNumber && !email && !labName) {
+        log.error("Error from [Lab SERVICE]: Empty request body");
         return res.status(400).json({
           message: "At least one field is required",
           status: "failed",
@@ -25,26 +24,12 @@ class AuthService {
         });
       }
 
-      // Check if email already exists
-      if (email) {
-        const existingUser = await userDao.getUserByEmail(email);
-        if (existingUser.data) {
-          return res.status(409).json({
-            message: "Email already exists",
-            status: "alreadyExists",
-            data: null,
-            code: 409,
-          });
-        }
-      }
+      const labData = removeNullUndefined({ firstName, lastName, mobileNumber, email, labName });
+      const labInfo = await labDao.createLab(labData);
 
-      // Build data object
-      const userData = removeNullUndefined({ name, mobileNumber, email, subject, clinicName });
-      const userInfo = await userDao.createUser(userData);
-
-      if (!userInfo.data) {
+      if (!labInfo.data) {
         return res.status(500).json({
-          message: "User creation failed",
+          message: "Lab creation failed",
           status: "fail",
           data: null,
           code: 500,
@@ -52,21 +37,21 @@ class AuthService {
       }
 
       return res.status(200).json({
-        message: "User registered successfully",
+        message: "Lab registered successfully",
         status: "success",
         code: 200,
-        data: {
-          user: {
-            userId: userInfo.data.userId,
-            name: userInfo.data.name,
-            email: userInfo.data.email,
-            mobileNumber: userInfo.data.mobileNumber,
-            clinicName: userInfo.data.clinicName,
-          },
-        },
+        // data: {
+        //   lab: {
+        //     firstName: labInfo.data.firstName,
+        //     lastName: labInfo.data.lastName,
+        //     email: labInfo.data.email,
+        //     mobileNumber: labInfo.data.mobileNumber,
+        //     labName: labInfo.data.labName,
+        //   },
+        // },
       });
     } catch (error) {
-      log.error("Error from [User SERVICE]:", error);
+      log.error("Error from [Lab SERVICE]:", error);
       return res.status(500).json({
         message: "Internal Server Error",
         status: "error",
@@ -351,4 +336,4 @@ class AuthService {
   }
 }
 
-module.exports = new AuthService();
+module.exports = new LabService();
